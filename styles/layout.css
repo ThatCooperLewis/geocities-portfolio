@@ -1,5 +1,23 @@
+@font-face {
+  font-family: "Comic Sans Web";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Comic Sans MS"), local("Comic Sans"),
+    url("https://fonts.cdnfonts.com/s/7739/ComicSansMS3.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Comic Sans Web";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Comic Sans MS Bold"), local("Comic Sans MS"),
+    url("https://fonts.cdnfonts.com/s/7739/ComicSansMSBold.woff") format("woff");
+  font-display: swap;
+}
+
 :root {
-  --body-font-family: "Comic Sans MS", cursive;
+  --body-font-family: "Comic Sans Web", "Comic Sans MS", "Comic Sans", cursive;
 
   /* Palette */
   --color-bg-primary: #0f1f2f;
