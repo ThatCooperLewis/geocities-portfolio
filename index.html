@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cooper's Photo Zone!!!</title>
+    <link rel="stylesheet" href="styles/layout.css" />
+    <link rel="stylesheet" href="styles/theme-blue.css" id="themeStylesheet" data-default-theme="blue" />
+    <script src="photos/photos.js" defer></script>
+    <script src="main.js" defer></script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <marquee behavior="alternate" scrollamount="4">WELCOME TO COOPER'S PHOTOS WORLD!!!</marquee>
+        <h1>Cooperwebsite.org</h1>
+        <p class="tagline">Redefining <span>Slop</span> one picture at a time.</p>
+      </header>
+
+      <!-- <nav>
+        <a href="#gallery">Photo Gallery</a>
+        <a href="#about">About</a>
+        <a href="#contact">Guestbook</a>
+      </nav> -->
+
+      <main>
+        <section id="gallery" class="gallery-section">
+          <h2>★ Photo Zone ★</h2>
+          <noscript class="noscript">Enable JavaScript to see the gallery</noscript>
+          <div class="gallery" data-gallery></div>
+        </section>
+
+        <section id="about" class="about-section">
+          <h2>Who is Cooper?</h2>
+          <p>
+            I'm a photographer and software engineer based in Portland, Oregon. Most of the pictures here are shot on film, because I can't be arsed to figure out my digital camera's autofocus settings.
+          </p>
+          <p>
+            Here's EDC, I never leave the house without a 40lb backpack full of these:
+          </p>
+          <ul class="camera-list">
+            <li><span class="camera-list__name">Leica M6</span> (35mm)</li>
+            <li><span class="camera-list__name">Mamiya 7ii</span> (6x7 + panoramic 35mm)</li>
+            <li><span class="camera-list__name">Hasselblad 503CM</span> (6x4.5 + polaroid)</li>
+            <li><span class="camera-list__name">Leica M10 Monochrom</span> (digital b&w)</li>
+            <li><span class="camera-list__name">Fuji X100VI</span> (digital color + infrared)</li>
+          </ul>
+        </section>
+
+        <section id="contact" class="contact-section">
+          <h2>Sign the Guestbook</h2>
+          <p class="tagline" data-contact-container>
+            Did I take a picture of you? Do you, for some reason, *want* me to take pictures of you? While I don't have any public DM's, you can contact me here:  
+            <button type="button" class="contact-reveal" data-contact-trigger aria-expanded="false">
+              Show email address
+            </button>
+            <span class="contact-email" data-contact-target hidden>
+              <a data-contact-link data-user="contact" data-domain="cooperwebsite.org">Email Cooper</a>
+            </span>
+          </p>
+        </section>
+
+        <section class="theme-section" aria-labelledby="theme-switcher-title">
+          <h2 id="theme-switcher-title">Choose Your Color Potion</h2>
+          <form class="theme-switcher" data-theme-switcher>
+            <label class="theme-option is-active">
+              <input type="radio" name="theme" value="blue" checked />
+              <span>Basement Jazz</span>
+            </label>
+            <label class="theme-option">
+              <input type="radio" name="theme" value="neon" />
+              <span>Midnight Neon</span>
+            </label>
+            <label class="theme-option">
+              <input type="radio" name="theme" value="sepia" />
+              <span>Sepia Sunburst</span>
+            </label>
+            <label class="theme-option">
+              <input type="radio" name="theme" value="sunny" />
+              <span>GeoGlitz Classic</span>
+            </label>
+          </form>
+        </section>
+      </main>
+
+      <footer>
+        <p>© 1995 Cooper's Photo Zone • Best viewed with Netscape Navigator 3.0 at 800x600</p>
+        <p class="badges">
+          <span>🔧 Site under perpetual construction</span>
+          <span>🚀 Powered by cutting-edge HTML 2.0</span>
+        </p>
+      </footer>
+    </div>
+
+    <div class="lightbox" data-lightbox hidden>
+      <button class="lightbox__close" type="button" aria-label="Close">✖</button>
+      <div class="lightbox__stage">
+        <img class="lightbox__image" alt="Expanded gallery view" />
+      </div>
+      <div class="lightbox__controls" role="group" aria-label="Lightbox navigation">
+        <button class="lightbox__nav lightbox__nav--prev" type="button" aria-label="Previous image">◀</button>
+        <button class="lightbox__nav lightbox__nav--next" type="button" aria-label="Next image">▶</button>
+      </div>
+    </div>
+  </body>
+</html>
