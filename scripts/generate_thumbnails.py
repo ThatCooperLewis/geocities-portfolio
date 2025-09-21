@@ -37,7 +37,16 @@ DEFAULT_QUALITY = 78
 
 
 def iter_photo_files(directory: Path) -> Iterable[Path]:
-    for entry in sorted(directory.iterdir(), key=lambda p: p.name.lower()):
+    """Yield all valid image files within ``directory`` and its subfolders."""
+
+    def sort_key(path: Path) -> str:
+        try:
+            relative = path.relative_to(directory)
+        except ValueError:
+            relative = path
+        return relative.as_posix().lower()
+
+    for entry in sorted(directory.rglob("*"), key=sort_key):
         if entry.is_file() and entry.suffix.lower() in ALLOWED_EXTENSIONS:
             yield entry
 
@@ -105,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     generated = 0
     skipped = 0
     for src in iter_photo_files(PHOTOS_DIR):
-        dest = THUMBNAIL_DIR / src.name
+        dest = THUMBNAIL_DIR / src.relative_to(PHOTOS_DIR)
         if generate_thumbnail(src, dest, max_size=args.max_size, quality=args.quality, force=args.force):
             generated += 1
         else:

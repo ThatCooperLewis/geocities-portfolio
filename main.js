@@ -1,5 +1,6 @@
 (function () {
   const galleryEl = document.querySelector('[data-gallery]');
+  const folderNavEl = document.querySelector('[data-folder-nav]');
   const lightboxEl = document.querySelector('[data-lightbox]');
   const lightboxImg = lightboxEl?.querySelector('.lightbox__image');
   const closeBtn = lightboxEl?.querySelector('.lightbox__close');
@@ -10,6 +11,8 @@
   const themeOptions = themeSwitchForm ? Array.from(themeSwitchForm.querySelectorAll('.theme-option')) : [];
   const themeRadios = themeSwitchForm ? Array.from(themeSwitchForm.querySelectorAll("input[name='theme']")) : [];
   const globalManifest = Array.isArray(window.__PHOTO_MANIFEST__) ? window.__PHOTO_MANIFEST__ : null;
+  let allItems = [];
+  let currentDirectory = '';
   let currentItems = [];
   let currentIndex = -1;
   const prefetchCache = new Set();
@@ -162,7 +165,7 @@
     currentIndex = -1;
     if (!Array.isArray(items) || items.length === 0) {
       const emptyMessage = document.createElement('p');
-      emptyMessage.textContent = 'No photos found in the vault. Drop some files into the photos folder!';
+      emptyMessage.textContent = 'No photos found for this selection.';
       emptyMessage.className = 'instructions';
       galleryEl.appendChild(emptyMessage);
       return;
@@ -222,6 +225,22 @@
     return Array.from(files);
   }
 
+  function deriveDirectoryFromFull(fullPath, explicitValue) {
+    if (typeof explicitValue === 'string') {
+      return explicitValue.trim();
+    }
+    if (!fullPath || typeof fullPath !== 'string') {
+      return '';
+    }
+    const prefix = 'photos/';
+    const normalized = fullPath.startsWith(prefix) ? fullPath.slice(prefix.length) : fullPath;
+    const segments = normalized.split('/').filter(Boolean);
+    if (segments.length <= 1) {
+      return '';
+    }
+    return segments.slice(0, -1).join('/');
+  }
+
   function normalizeItems(items) {
     if (!Array.isArray(items)) return [];
 
@@ -235,6 +254,7 @@
             full: fullPath,
             thumb: fullPath,
             title: buildTitleFromFilename(fullPath, index),
+            directory: deriveDirectoryFromFull(fullPath),
           };
         }
         if (typeof raw === 'object') {
@@ -253,6 +273,7 @@
             full: finalFull,
             thumb: finalThumb,
             title,
+            directory: deriveDirectoryFromFull(finalFull, raw.directory),
           };
         }
         return null;
@@ -303,11 +324,132 @@
     prefetchCache.add(url);
   }
 
+  function formatDirectorySegment(segment) {
+    if (!segment) {
+      return '';
+    }
+    const cleaned = segment.replace(/[-_]+/g, ' ').trim();
+    if (!cleaned) {
+      return segment;
+    }
+    if (/^[A-Z0-9\s]+$/.test(cleaned)) {
+      return cleaned;
+    }
+    return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  function formatDirectoryLabel(directory) {
+    if (!directory) {
+      return 'portfolio';
+    }
+    return directory
+      .split('/')
+      .map(formatDirectorySegment)
+      .filter(Boolean)
+      .join(' / ') || 'portfolio';
+  }
+
+  function updateActiveDirectory(directory) {
+    if (!folderNavEl) {
+      return;
+    }
+    const buttons = folderNavEl.querySelectorAll('[data-directory]');
+    buttons.forEach((button) => {
+      const isActive = button.dataset.directory === directory;
+      button.classList.toggle('is-active', isActive);
+      if (isActive) {
+        button.setAttribute('aria-pressed', 'true');
+      } else {
+        button.removeAttribute('aria-pressed');
+      }
+    });
+  }
+
+  function initializeDirectoryNavigation(items) {
+    if (!folderNavEl) {
+      return '';
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      folderNavEl.hidden = true;
+      folderNavEl.innerHTML = '';
+      return '';
+    }
+
+    const directoryMap = new Map();
+
+    items.forEach((item) => {
+      const rawDirectory = typeof item.directory === 'string' ? item.directory : '';
+      const key = rawDirectory.trim();
+      const existing = directoryMap.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        directoryMap.set(key, {
+          key,
+          label: formatDirectoryLabel(key),
+          count: 1,
+        });
+      }
+    });
+
+    const sorted = Array.from(directoryMap.values()).sort((a, b) => {
+      if (a.key === '' && b.key !== '') return -1;
+      if (a.key !== '' && b.key === '') return 1;
+      return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
+    });
+
+    if (sorted.length <= 1 && sorted[0]?.key === '') {
+      folderNavEl.hidden = true;
+      folderNavEl.innerHTML = '';
+      return sorted[0]?.key ?? '';
+    }
+
+    folderNavEl.hidden = false;
+    folderNavEl.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+    sorted.forEach((meta) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'folder-nav__button';
+      button.dataset.directory = meta.key;
+      button.textContent = meta.label;
+      button.addEventListener('click', () => {
+        setDirectory(meta.key);
+      });
+      fragment.appendChild(button);
+    });
+
+    folderNavEl.appendChild(fragment);
+
+    const rootEntry = directoryMap.get('');
+    return rootEntry ? rootEntry.key : sorted[0]?.key ?? '';
+  }
+
+  function setDirectory(directory) {
+    const normalized = typeof directory === 'string' ? directory : '';
+    currentDirectory = normalized;
+    updateActiveDirectory(normalized);
+
+    const filtered = normalized
+      ? allItems.filter((item) => (item.directory || '') === normalized)
+      : allItems.filter((item) => (item.directory || '') === '');
+
+    createGallery(filtered);
+  }
+
+  function initializeGallery(items) {
+    allItems = normalizeItems(items);
+    const defaultDirectory = initializeDirectoryNavigation(allItems);
+    setDirectory(defaultDirectory);
+  }
+
   async function loadGallery() {
     const manifestCandidates = ['photos/photos.json', 'photos/manifest.json'];
 
     if (globalManifest?.length) {
-      createGallery(normalizeItems(globalManifest));
+      initializeGallery(globalManifest);
       return;
     }
 
@@ -315,7 +457,7 @@
       try {
         const list = await fetchJsonList(manifest);
         if (list.length) {
-          createGallery(normalizeItems(list));
+          initializeGallery(list);
           return;
         }
       } catch (err) {
@@ -325,9 +467,9 @@
 
     try {
       const list = await fetchFromDirectoryListing();
-      createGallery(normalizeItems(list));
+      initializeGallery(list);
     } catch (err) {
-      createGallery([]);
+      initializeGallery([]);
     }
   }
 

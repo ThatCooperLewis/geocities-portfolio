@@ -15,6 +15,19 @@ JS_OUTPUT_FILE = PHOTOS_DIR / "photos.js"
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff"}
 
 
+def iter_photo_files(directory: Path):
+    def sort_key(path: Path) -> str:
+        try:
+            relative = path.relative_to(directory)
+        except ValueError:
+            relative = path
+        return relative.as_posix().lower()
+
+    for path in sorted(directory.rglob("*"), key=sort_key):
+        if path.is_file() and path.suffix.lower() in ALLOWED_EXTENSIONS:
+            yield path
+
+
 def friendly_title(stem: str) -> str:
     cleaned = re.sub(r"[_\-]+", " ", stem).strip()
     if not cleaned:
@@ -26,18 +39,18 @@ def build_manifest() -> tuple[list[dict], list[str]]:
     entries: list[dict] = []
     missing_thumbs: list[str] = []
 
-    for file in sorted(PHOTOS_DIR.iterdir(), key=lambda p: p.name.lower()):
-        if not file.is_file() or file.suffix.lower() not in ALLOWED_EXTENSIONS:
-            continue
+    for file in iter_photo_files(PHOTOS_DIR):
+        relative_path = file.relative_to(PHOTOS_DIR)
+        relative_str = relative_path.as_posix()
+        filename = relative_path.name
+        full_rel = f"photos/{relative_str}"
 
-        filename = file.name
-        full_rel = f"photos/{filename}"
-        thumbnail_path = THUMBNAILS_DIR / filename
+        thumbnail_path = THUMBNAILS_DIR / relative_path
         if thumbnail_path.exists():
-            thumb_rel = f"thumbnails/{filename}"
+            thumb_rel = f"thumbnails/{relative_str}"
         else:
             thumb_rel = full_rel
-            missing_thumbs.append(filename)
+            missing_thumbs.append(relative_str)
 
         entries.append(
             {
@@ -45,6 +58,7 @@ def build_manifest() -> tuple[list[dict], list[str]]:
                 "full": full_rel,
                 "thumb": thumb_rel,
                 "title": friendly_title(file.stem),
+                "directory": relative_path.parent.as_posix() if relative_path.parent != Path('.') else "",
             }
         )
 
