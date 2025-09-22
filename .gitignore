@@ -1,3 +1,6 @@
-venv/**
 thumbnails/**
+photos/**
+
+venv/**
+
 .DS_Store
