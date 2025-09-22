@@ -3,9 +3,7 @@
   const folderNavEl = document.querySelector('[data-folder-nav]');
   const lightboxEl = document.querySelector('[data-lightbox]');
   const lightboxImg = lightboxEl?.querySelector('.lightbox__image');
-  const closeBtn = lightboxEl?.querySelector('.lightbox__close');
-  const prevBtn = lightboxEl?.querySelector('.lightbox__nav--prev');
-  const nextBtn = lightboxEl?.querySelector('.lightbox__nav--next');
+  const lightboxStage = lightboxEl?.querySelector('.lightbox__stage');
   const themeLinkEl = document.getElementById('themeStylesheet');
   const themeSwitchForm = document.querySelector('[data-theme-switcher]');
   const themeOptions = themeSwitchForm ? Array.from(themeSwitchForm.querySelectorAll('.theme-option')) : [];
@@ -473,9 +471,21 @@
     }
   }
 
-  closeBtn?.addEventListener('click', closeLightbox);
-  prevBtn?.addEventListener('click', () => changeImage(-1));
-  nextBtn?.addEventListener('click', () => changeImage(1));
+  lightboxStage?.addEventListener('click', (event) => {
+    if (event.target === lightboxStage) {
+      closeLightbox();
+    }
+  });
+  lightboxImg?.addEventListener('click', (event) => {
+    if (!lightboxImg || !currentItems.length) return;
+
+    const rect = lightboxImg.getBoundingClientRect();
+    if (rect.width === 0) return;
+
+    const midpoint = rect.left + rect.width / 2;
+    const direction = event.clientX < midpoint ? -1 : 1;
+    changeImage(direction);
+  });
   lightboxEl?.addEventListener('click', (event) => {
     if (event.target === lightboxEl) {
       closeLightbox();

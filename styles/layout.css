@@ -84,13 +84,6 @@
   --lightbox-image-border: 6px double #bcbcbc;
   --lightbox-image-shadow: 0 0 28px rgba(180, 198, 220, 0.85),
     0 0 12px rgba(35, 54, 70, 0.8) inset;
-  --lightbox-close-border: 3px ridge var(--color-border-secondary);
-  --lightbox-close-background: #122a3c;
-  --lightbox-close-color: var(--color-accent-primary);
-  --lightbox-nav-border: 4px solid var(--color-accent-secondary);
-  --lightbox-nav-background: rgba(21, 43, 60, 0.92);
-  --lightbox-nav-color: var(--color-tone-bright);
-  --lightbox-nav-shadow: 0 0 14px rgba(var(--color-accent-tertiary-rgb), 0.6);
   --focus-outline: var(--color-tone-bright);
   --theme-switcher-background: rgba(16, 32, 46, 0.92);
   --theme-switcher-border: 3px groove var(--color-border-secondary);
@@ -382,40 +375,9 @@ footer .badges {
   max-height: 90vh;
   border: var(--lightbox-image-border);
   box-shadow: var(--lightbox-image-shadow);
-}
-
-.lightbox__close {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  border: var(--lightbox-close-border);
-  background: var(--lightbox-close-background);
-  color: var(--lightbox-close-color);
-  font-size: 1.4rem;
-  padding: 4px 10px;
   cursor: pointer;
 }
 
-.lightbox__controls {
-  display: flex;
-  gap: 18px;
-  justify-content: center;
-  width: 100%;
-  padding: 24px 0 8px;
-}
-
-.lightbox__nav {
-  border: var(--lightbox-nav-border);
-  background: var(--lightbox-nav-background);
-  color: var(--lightbox-nav-color);
-  font-size: 2.2rem;
-  padding: 6px 14px;
-  cursor: pointer;
-  box-shadow: var(--lightbox-nav-shadow);
-}
-
-.lightbox__nav:focus,
-.lightbox__close:focus,
 .theme-option input[type='radio']:focus-visible + span {
   outline: 3px dotted var(--focus-outline);
   outline-offset: 3px;
@@ -442,8 +404,4 @@ footer .badges {
     padding: 24px 16px;
   }
 
-  .lightbox__controls {
-    gap: 12px;
-    padding-top: 16px;
-  }
 }
