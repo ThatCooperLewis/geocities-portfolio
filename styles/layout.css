@@ -358,6 +358,66 @@ footer .badges {
   z-index: 999;
 }
 
+.lightbox__close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: var(--lightbox-close-border, 3px solid rgba(255, 255, 255, 0.65));
+  border-radius: 10px;
+  background: var(
+    --lightbox-close-background,
+    linear-gradient(140deg, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0.55) 100%)
+  );
+  color: var(--lightbox-close-color, #fff);
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--lightbox-close-shadow, 0 6px 18px rgba(0, 0, 0, 0.45));
+  text-shadow: var(--lightbox-close-text-shadow, 0 2px 4px rgba(0, 0, 0, 0.6));
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.lightbox__close:hover,
+.lightbox__close:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(
+    --lightbox-close-shadow-active,
+    0 10px 22px rgba(0, 0, 0, 0.55)
+  );
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.lightbox__close:focus-visible {
+  outline: 3px solid var(--focus-outline, rgba(255, 255, 255, 0.85));
+  outline-offset: 4px;
+}
+
+.lightbox__close:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: var(
+    --lightbox-close-shadow-pressed,
+    0 4px 12px rgba(0, 0, 0, 0.5)
+  );
+}
+
+.lightbox__hint {
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  color: var(
+    --color-accent-tertiary-dark,
+    rgba(255, 255, 255, 0.85)
+  );
+  text-align: center;
+}
+
 .lightbox__stage {
   flex: 1 1 auto;
   display: flex;

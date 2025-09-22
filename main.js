@@ -4,6 +4,7 @@
   const lightboxEl = document.querySelector('[data-lightbox]');
   const lightboxImg = lightboxEl?.querySelector('.lightbox__image');
   const lightboxStage = lightboxEl?.querySelector('.lightbox__stage');
+  const lightboxCloseBtn = lightboxEl?.querySelector('[data-lightbox-close]');
   const themeLinkEl = document.getElementById('themeStylesheet');
   const themeSwitchForm = document.querySelector('[data-theme-switcher]');
   const themeOptions = themeSwitchForm ? Array.from(themeSwitchForm.querySelectorAll('.theme-option')) : [];
@@ -13,6 +14,7 @@
   let currentDirectory = '';
   let currentItems = [];
   let currentIndex = -1;
+  let currentImageToken = 0;
   const prefetchCache = new Set();
   const THEME_STORAGE_KEY = 'photo-zone-theme';
   const THEME_MAP = {
@@ -81,9 +83,35 @@
     const item = currentItems[normalizedIndex];
     if (!item) return;
 
-    lightboxImg.src = item.full;
-    lightboxImg.alt = item.title;
+    const { full, thumb, title } = item;
+    currentImageToken += 1;
+    const requestToken = currentImageToken;
+
     lightboxImg.dataset.index = String(normalizedIndex);
+    lightboxImg.alt = title;
+
+    const hasDistinctThumb = Boolean(thumb && thumb !== full);
+    if (hasDistinctThumb) {
+      lightboxImg.src = thumb;
+    } else {
+      lightboxImg.src = full;
+    }
+
+    const fullImage = new Image();
+    fullImage.decoding = 'async';
+    const swapToFull = () => {
+      if (!lightboxImg || currentImageToken !== requestToken) return;
+      lightboxImg.src = full;
+    };
+    const handleError = () => {
+      if (currentImageToken !== requestToken) return;
+    };
+    fullImage.addEventListener('load', swapToFull);
+    fullImage.addEventListener('error', handleError);
+    fullImage.src = full;
+    if (fullImage.complete && fullImage.naturalWidth) {
+      swapToFull();
+    }
 
     prefetchImage(normalizedIndex + 1);
     prefetchImage(normalizedIndex - 1);
@@ -472,9 +500,22 @@
   }
 
   lightboxStage?.addEventListener('click', (event) => {
-    if (event.target === lightboxStage) {
-      closeLightbox();
+    if (!currentItems.length || !lightboxStage) return;
+
+    if (event.target === lightboxImg) {
+      return;
     }
+
+    const rect = lightboxStage.getBoundingClientRect();
+    if (rect.width === 0) return;
+
+    const midpoint = rect.left + rect.width / 2;
+    const direction = event.clientX < midpoint ? -1 : 1;
+    changeImage(direction);
+  });
+  lightboxCloseBtn?.addEventListener('click', (event) => {
+    event.preventDefault();
+    closeLightbox();
   });
   lightboxImg?.addEventListener('click', (event) => {
     if (!lightboxImg || !currentItems.length) return;
