@@ -14,7 +14,7 @@
       <header>
         <marquee behavior="alternate" scrollamount="4">WELCOME TO COOPER'S PHOTOS WORLD!!!</marquee>
         <h1>Cooperwebsite.org</h1>
-        <p class="tagline">Redefining <span>Slop</span> one picture at a time.</p>
+        <p class="tagline">Redefining slop one picture at a time.</p>
       </header>
 
       <!-- <nav>
@@ -24,42 +24,8 @@
       </nav> -->
 
       <main>
-        <section id="gallery" class="gallery-section">
-          <h2>★ Photo Zone ★</h2>
-          <div class="folder-nav" data-folder-nav hidden></div>
-          <noscript class="noscript">Enable JavaScript to see the gallery</noscript>
-          <div class="gallery" data-gallery></div>
-        </section>
 
-        <section id="about" class="about-section">
-          <h2>Who is Cooper?</h2>
-          <p>
-            I'm a photographer and software engineer based in Portland, Oregon. Most of the pictures here are shot on film, because I can't be arsed to figure out my digital camera's autofocus settings.
-          </p>
-          <p>
-            Here's EDC, I never leave the house without a 40lb backpack full of these:
-          </p>
-          <ul class="camera-list">
-            <li><span class="camera-list__name">Leica M6</span> (35mm)</li>
-            <li><span class="camera-list__name">Mamiya 7ii</span> (6x7 + panoramic 35mm)</li>
-            <li><span class="camera-list__name">Hasselblad 503CM</span> (6x4.5 + polaroid)</li>
-            <li><span class="camera-list__name">Leica M10 Monochrom</span> (digital b&w)</li>
-            <li><span class="camera-list__name">Fuji X100VI</span> (digital color + infrared)</li>
-          </ul>
-        </section>
-
-        <section id="contact" class="contact-section">
-          <h2>Sign the Guestbook</h2>
-          <p class="tagline" data-contact-container>
-            Did I take a picture of you? Do you, for some reason, *want* me to take pictures of you? While I don't have any public DM's, you can contact me here:  
-            <button type="button" class="contact-reveal" data-contact-trigger aria-expanded="false">
-              Show email address
-            </button>
-            <span class="contact-email" data-contact-target hidden>
-              <a data-contact-link data-user="contact" data-domain="cooperwebsite.org">Email Cooper</a>
-            </span>
-          </p>
-        </section>
+        <!-- CSS SWITCHER -->
 
         <section class="theme-section" aria-labelledby="theme-switcher-title">
           <h2 id="theme-switcher-title">Choose Your Color Potion</h2>
@@ -82,6 +48,50 @@
             </label>
           </form>
         </section>
+
+        <!-- MAIN GALLERY -->
+
+        <section id="gallery" class="gallery-section">
+          <h2>★ Photo Zone ★</h2>
+          <div class="folder-nav" data-folder-nav hidden></div>
+          <noscript class="noscript">Enable JavaScript to see the gallery</noscript>
+          <div class="gallery" data-gallery></div>
+        </section>
+
+        <!-- ABOUT -->
+
+        <section id="about" class="about-section">
+          <h2>Who is Cooper?</h2>
+          <p>
+            I'm a photographer and software engineer based in Portland, Oregon. Most of the pictures here are shot on film, because I can't be arsed to figure out my digital camera's autofocus settings.
+          </p>
+          <p>
+            Here's EDC, I never leave the house without a 40lb backpack full of these:
+          </p>
+          <ul class="camera-list">
+            <li><span class="camera-list__name">Leica M6</span> (35mm)</li>
+            <li><span class="camera-list__name">Mamiya 7ii</span> (6x7 + panoramic 35mm)</li>
+            <li><span class="camera-list__name">Hasselblad 503CM</span> (6x4.5 + polaroid)</li>
+            <li><span class="camera-list__name">Leica M10 Monochrom</span> (digital b&w)</li>
+            <li><span class="camera-list__name">Fuji X100VI</span> (digital color + infrared)</li>
+          </ul>
+        </section>
+
+        <!-- CONTACT -->
+
+        <section id="contact" class="contact-section">
+          <h2>Sign the Guestbook</h2>
+          <p class="tagline" data-contact-container>
+            Did I take a picture of you? Do you, for some reason, *want* me to take pictures of you? While I don't have any public DM's, you can contact me here:  
+            <button type="button" class="contact-reveal" data-contact-trigger aria-expanded="false">
+              Show email address
+            </button>
+            <span class="contact-email" data-contact-target hidden>
+              <a data-contact-link data-user="contact" data-domain="cooperwebsite.org">Email Cooper</a>
+            </span>
+          </p>
+        </section>
+
       </main>
 
       <footer>
