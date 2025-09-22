@@ -424,6 +424,31 @@ footer .badges {
   align-items: center;
   justify-content: center;
   width: 100%;
+  position: relative;
+}
+
+.lightbox__stage::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.18);
+  border-top-color: var(--color-accent-secondary, #ffb347);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  animation: lightbox-spinner 0.8s linear infinite;
+  z-index: 2;
+}
+
+.lightbox__stage.is-loading::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 .lightbox[hidden] {
@@ -436,11 +461,74 @@ footer .badges {
   border: var(--lightbox-image-border);
   box-shadow: var(--lightbox-image-shadow);
   cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.lightbox__image.is-transitioning {
+  opacity: 0.6;
+}
+
+.lightbox__sparkle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.35));
+}
+
+.lightbox__sparkle-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--sparkle-color, #fff5b1);
+  image-rendering: pixelated;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+  animation: lightbox-sparkle-pop 700ms ease-out forwards;
+  animation-delay: var(--sparkle-delay, 0ms);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+  border-radius: 1px;
+  will-change: transform, opacity;
+}
+
+@keyframes lightbox-sparkle-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--sparkle-offset-x, 0px)),
+        calc(-50% + var(--sparkle-offset-y, 0px))
+      )
+      rotate(var(--sparkle-rotation, 0deg))
+      scale(var(--sparkle-scale, 1));
+  }
 }
 
 .theme-option input[type='radio']:focus-visible + span {
   outline: 3px dotted var(--focus-outline);
   outline-offset: 3px;
+}
+
+@keyframes lightbox-spinner {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 600px) {

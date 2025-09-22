@@ -16,6 +16,70 @@
   let currentIndex = -1;
   let currentImageToken = 0;
   const prefetchCache = new Set();
+  const TAP_SPARKLE_COLORS = ['#fff27f', '#ff75b5', '#62f5ff', '#ffe066', '#8afd8f'];
+  const TAP_SPARKLE_PIECES = 8;
+
+  function spawnLightboxSparkleAt(clientX, clientY) {
+    if (!lightboxStage) return;
+
+    const rect = lightboxStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const sparkle = document.createElement('div');
+    sparkle.className = 'lightbox__sparkle';
+    sparkle.style.left = `${clientX - rect.left}px`;
+    sparkle.style.top = `${clientY - rect.top}px`;
+
+    for (let index = 0; index < TAP_SPARKLE_PIECES; index += 1) {
+      const piece = document.createElement('span');
+      piece.className = 'lightbox__sparkle-piece';
+
+      const baseAngle = (Math.PI * 2 * index) / TAP_SPARKLE_PIECES;
+      const angleOffset = (Math.random() - 0.5) * 0.6;
+      const angle = baseAngle + angleOffset;
+      const distance = 36 + Math.random() * 32;
+
+      piece.style.setProperty('--sparkle-offset-x', `${Math.cos(angle) * distance}px`);
+      piece.style.setProperty('--sparkle-offset-y', `${Math.sin(angle) * distance}px`);
+      piece.style.setProperty('--sparkle-delay', `${index * 35}ms`);
+      piece.style.setProperty('--sparkle-rotation', `${Math.round((Math.random() - 0.5) * 90)}deg`);
+      piece.style.setProperty('--sparkle-scale', `${0.8 + Math.random() * 0.6}`);
+      piece.style.setProperty('--sparkle-color', TAP_SPARKLE_COLORS[index % TAP_SPARKLE_COLORS.length]);
+
+      sparkle.appendChild(piece);
+    }
+
+    lightboxStage.appendChild(sparkle);
+    window.setTimeout(() => {
+      sparkle.remove();
+    }, 800);
+  }
+
+  function handleLightboxTapFeedback(event) {
+    if (!lightboxStage) return;
+    if ('button' in event && typeof event.button === 'number' && event.button !== 0 && event.type !== 'touchstart') {
+      return;
+    }
+
+    let pointX;
+    let pointY;
+
+    if (event.type === 'touchstart') {
+      const touch = event.touches?.[0];
+      if (!touch) return;
+      pointX = touch.clientX;
+      pointY = touch.clientY;
+    } else {
+      pointX = event.clientX;
+      pointY = event.clientY;
+    }
+
+    if (typeof pointX !== 'number' || typeof pointY !== 'number') {
+      return;
+    }
+
+    spawnLightboxSparkleAt(pointX, pointY);
+  }
   const THEME_STORAGE_KEY = 'photo-zone-theme';
   const THEME_MAP = {
     blue: 'styles/theme-blue.css',
@@ -73,6 +137,77 @@
     }
   }
 
+  const MIN_LIGHTBOX_LOADING_MS = 150;
+  const now =
+    typeof window.performance === 'object' && typeof window.performance.now === 'function'
+      ? () => window.performance.now()
+      : () => Date.now();
+  const lightboxLoadingState = {
+    token: null,
+    startedAt: 0,
+    timeoutId: 0,
+  };
+
+  function clearLoadingTimeout() {
+    if (lightboxLoadingState.timeoutId) {
+      window.clearTimeout(lightboxLoadingState.timeoutId);
+      lightboxLoadingState.timeoutId = 0;
+    }
+  }
+
+  function finalizeLightboxLoading() {
+    if (!lightboxStage) return;
+    lightboxStage.classList.remove('is-loading');
+    lightboxStage.removeAttribute('aria-busy');
+    delete lightboxStage.dataset.loadingToken;
+    lightboxLoadingState.token = null;
+    lightboxLoadingState.startedAt = 0;
+    clearLoadingTimeout();
+  }
+
+  function setLightboxLoading(loading, token) {
+    if (!lightboxStage) return;
+
+    const hasToken = token !== undefined && token !== null;
+    const normalizedToken = hasToken ? String(token) : null;
+    const activeToken = lightboxStage.dataset.loadingToken;
+
+    if (loading) {
+      clearLoadingTimeout();
+      lightboxStage.classList.add('is-loading');
+      lightboxStage.setAttribute('aria-busy', 'true');
+      if (hasToken) {
+        lightboxStage.dataset.loadingToken = normalizedToken;
+        lightboxLoadingState.token = normalizedToken;
+        lightboxLoadingState.startedAt = now();
+      } else {
+        lightboxLoadingState.token = null;
+        lightboxLoadingState.startedAt = 0;
+      }
+      return;
+    }
+
+    if (hasToken && activeToken && activeToken !== normalizedToken) {
+      return;
+    }
+
+    if (hasToken && lightboxLoadingState.token === normalizedToken) {
+      const elapsed = now() - (lightboxLoadingState.startedAt || 0);
+      if (elapsed < MIN_LIGHTBOX_LOADING_MS) {
+        clearLoadingTimeout();
+        lightboxLoadingState.timeoutId = window.setTimeout(() => {
+          if (lightboxStage.dataset.loadingToken !== normalizedToken) {
+            return;
+          }
+          finalizeLightboxLoading();
+        }, MIN_LIGHTBOX_LOADING_MS - elapsed);
+        return;
+      }
+    }
+
+    finalizeLightboxLoading();
+  }
+
   function showImageAt(index) {
     if (!lightboxImg || !currentItems.length) return;
 
@@ -90,6 +225,9 @@
     lightboxImg.dataset.index = String(normalizedIndex);
     lightboxImg.alt = title;
 
+    setLightboxLoading(true, requestToken);
+    lightboxImg.classList.add('is-transitioning');
+
     const hasDistinctThumb = Boolean(thumb && thumb !== full);
     if (hasDistinctThumb) {
       lightboxImg.src = thumb;
@@ -102,15 +240,22 @@
     const swapToFull = () => {
       if (!lightboxImg || currentImageToken !== requestToken) return;
       lightboxImg.src = full;
+      lightboxImg.classList.remove('is-transitioning');
+      setLightboxLoading(false, requestToken);
     };
     const handleError = () => {
       if (currentImageToken !== requestToken) return;
+      lightboxImg.classList.remove('is-transitioning');
+      setLightboxLoading(false, requestToken);
     };
     fullImage.addEventListener('load', swapToFull);
     fullImage.addEventListener('error', handleError);
     fullImage.src = full;
     if (fullImage.complete && fullImage.naturalWidth) {
-      swapToFull();
+      window.requestAnimationFrame(() => {
+        if (currentImageToken !== requestToken) return;
+        swapToFull();
+      });
     }
 
     prefetchImage(normalizedIndex + 1);
@@ -127,8 +272,10 @@
     if (lightboxImg) {
       lightboxImg.src = '';
       lightboxImg.alt = '';
+      lightboxImg.classList.remove('is-transitioning');
     }
     currentIndex = -1;
+    setLightboxLoading(false);
     setLightboxVisibility(false);
   }
 
@@ -513,6 +660,14 @@
     const direction = event.clientX < midpoint ? -1 : 1;
     changeImage(direction);
   });
+  if (lightboxStage) {
+    if (window.PointerEvent) {
+      lightboxStage.addEventListener('pointerdown', handleLightboxTapFeedback);
+    } else {
+      lightboxStage.addEventListener('mousedown', handleLightboxTapFeedback);
+      lightboxStage.addEventListener('touchstart', handleLightboxTapFeedback, { passive: true });
+    }
+  }
   lightboxCloseBtn?.addEventListener('click', (event) => {
     event.preventDefault();
     closeLightbox();

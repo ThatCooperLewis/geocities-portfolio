@@ -1,6 +1,8 @@
 # Geocities Portfolio
 
-Created with shame using GPT Codex. I haven't looked in `main.js` even once, but I assume it's a nightmare.
+Created ~~with immense shame~~ with love, using GPT Codex. 
+
+I haven't looked in `main.js` even once, but I assume it's a nightmare.
 
 ## Preview locally
 Open `index.html` in any browser. We don't `npm` around here.
