@@ -1,5 +1,5 @@
 :root {
-  --body-font-family: "Comic Sans Web", "Comic Sans MS", "Comic Sans", cursive;
+  --body-font-family: "Comic Sans MS Local", "Comic Sans MS", "Comic Sans", "Chalkboard SE", cursive;
 
   /* Palette */
   --color-bg-primary: #fffbd6;
