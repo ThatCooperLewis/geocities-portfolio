@@ -1,2 +1,3 @@
 venv/**
 thumbnails/**
+.DS_Store
