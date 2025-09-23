@@ -10,6 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PHOTOS_DIR = REPO_ROOT / "photos"
 THUMBNAILS_DIR = REPO_ROOT / "thumbnails"
+OPTIMIZED_DIR = REPO_ROOT / "optimized"
 JSON_OUTPUT_FILE = PHOTOS_DIR / "photos.json"
 JS_OUTPUT_FILE = PHOTOS_DIR / "photos.js"
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff"}
@@ -35,15 +36,23 @@ def friendly_title(stem: str) -> str:
     return cleaned.title()
 
 
-def build_manifest() -> tuple[list[dict], list[str]]:
+def build_manifest() -> tuple[list[dict], list[str], list[str]]:
     entries: list[dict] = []
     missing_thumbs: list[str] = []
+    missing_optimised: list[str] = []
 
     for file in iter_photo_files(PHOTOS_DIR):
         relative_path = file.relative_to(PHOTOS_DIR)
         relative_str = relative_path.as_posix()
         filename = relative_path.name
-        full_rel = f"photos/{relative_str}"
+        raw_rel = f"photos/{relative_str}"
+
+        optimised_candidate = OPTIMIZED_DIR / relative_path
+        if optimised_candidate.exists():
+            full_rel = f"optimized/{relative_str}"
+        else:
+            full_rel = raw_rel
+            missing_optimised.append(relative_str)
 
         thumbnail_path = THUMBNAILS_DIR / relative_path
         if thumbnail_path.exists():
@@ -57,12 +66,13 @@ def build_manifest() -> tuple[list[dict], list[str]]:
                 "filename": filename,
                 "full": full_rel,
                 "thumb": thumb_rel,
+                "download": raw_rel,
                 "title": friendly_title(file.stem),
                 "directory": relative_path.parent.as_posix() if relative_path.parent != Path('.') else "",
             }
         )
 
-    return entries, missing_thumbs
+    return entries, missing_thumbs, missing_optimised
 
 
 def write_outputs(manifest: list[dict]) -> None:
@@ -72,7 +82,7 @@ def write_outputs(manifest: list[dict]) -> None:
 
 
 def main() -> None:
-    manifest, missing_thumbs = build_manifest()
+    manifest, missing_thumbs, missing_optimised = build_manifest()
     write_outputs(manifest)
 
     message = (
@@ -83,6 +93,11 @@ def main() -> None:
         message += (
             " Missing thumbnails for: " + ", ".join(missing_thumbs) +
             ". Run scripts/generate_thumbnails.py and rerun this script to create them."
+        )
+    if missing_optimised:
+        message += (
+            " Missing optimised copies for: " + ", ".join(missing_optimised) +
+            ". Run scripts/optimize_raw_images.py to populate optimized/."
         )
     print(message)
 

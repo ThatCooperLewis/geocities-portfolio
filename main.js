@@ -1,9 +1,13 @@
 (function () {
+  const ENABLE_LIGHTBOX_SPARKLES = false;
+
   const galleryEl = document.querySelector('[data-gallery]');
   const folderNavEl = document.querySelector('[data-folder-nav]');
   const lightboxEl = document.querySelector('[data-lightbox]');
   const lightboxImg = lightboxEl?.querySelector('.lightbox__image');
   const lightboxStage = lightboxEl?.querySelector('.lightbox__stage');
+  const lightboxDownloadWrapper = lightboxEl?.querySelector('[data-lightbox-download-wrapper]');
+  const lightboxDownload = lightboxEl?.querySelector('[data-lightbox-download]');
   const lightboxCloseBtn = lightboxEl?.querySelector('[data-lightbox-close]');
   const themeLinkEl = document.getElementById('themeStylesheet');
   const themeSwitchForm = document.querySelector('[data-theme-switcher]');
@@ -20,6 +24,7 @@
   const TAP_SPARKLE_PIECES = 8;
 
   function spawnLightboxSparkleAt(clientX, clientY) {
+    if (!ENABLE_LIGHTBOX_SPARKLES) return;
     if (!lightboxStage) return;
 
     const rect = lightboxStage.getBoundingClientRect();
@@ -56,6 +61,7 @@
   }
 
   function handleLightboxTapFeedback(event) {
+    if (!ENABLE_LIGHTBOX_SPARKLES) return;
     if (!lightboxStage) return;
     if ('button' in event && typeof event.button === 'number' && event.button !== 0 && event.type !== 'touchstart') {
       return;
@@ -218,12 +224,25 @@
     const item = currentItems[normalizedIndex];
     if (!item) return;
 
-    const { full, thumb, title } = item;
+    const { full, thumb, title, download } = item;
     currentImageToken += 1;
     const requestToken = currentImageToken;
 
     lightboxImg.dataset.index = String(normalizedIndex);
     lightboxImg.alt = title;
+    lightboxImg.removeAttribute('src');
+
+    if (lightboxDownloadWrapper && lightboxDownload) {
+      if (download) {
+        lightboxDownload.href = download;
+        lightboxDownload.setAttribute('aria-label', `Download full size of ${title}`);
+        lightboxDownloadWrapper.hidden = false;
+      } else {
+        lightboxDownload.removeAttribute('href');
+        lightboxDownload.removeAttribute('aria-label');
+        lightboxDownloadWrapper.hidden = true;
+      }
+    }
 
     setLightboxLoading(true, requestToken);
     lightboxImg.classList.add('is-transitioning');
@@ -273,6 +292,11 @@
       lightboxImg.src = '';
       lightboxImg.alt = '';
       lightboxImg.classList.remove('is-transitioning');
+    }
+    if (lightboxDownloadWrapper && lightboxDownload) {
+      lightboxDownload.removeAttribute('href');
+      lightboxDownload.removeAttribute('aria-label');
+      lightboxDownloadWrapper.hidden = true;
     }
     currentIndex = -1;
     setLightboxLoading(false);
@@ -426,6 +450,7 @@
             filename: extractFilename(fullPath) || `image-${index + 1}`,
             full: fullPath,
             thumb: fullPath,
+            download: fullPath,
             title: buildTitleFromFilename(fullPath, index),
             directory: deriveDirectoryFromFull(fullPath),
           };
@@ -433,9 +458,14 @@
         if (typeof raw === 'object') {
           const fullPath = normalizePath(raw.full ?? raw.path ?? raw.src ?? raw.url ?? '', 'photos/');
           const thumbPath = normalizePath(raw.thumb ?? raw.thumbnail ?? raw.thumbUrl ?? '', 'thumbnails/');
+          const downloadPath = normalizePath(
+            raw.download ?? raw.original ?? raw.raw ?? '',
+            'photos/'
+          );
           const fallbackFull = fullPath || normalizePath(raw.filename ?? raw.name ?? '', 'photos/');
           const finalFull = fullPath || fallbackFull;
           const finalThumb = thumbPath || finalFull;
+          const finalDownload = downloadPath || fallbackFull || finalFull;
           const filename = raw.filename ?? raw.name ?? extractFilename(finalFull) ?? `image-${index + 1}`;
           const title = raw.title ?? buildTitleFromFilename(filename, index);
           if (!finalFull) {
@@ -445,6 +475,7 @@
             filename,
             full: finalFull,
             thumb: finalThumb,
+            download: finalDownload,
             title,
             directory: deriveDirectoryFromFull(finalFull, raw.directory),
           };
@@ -461,7 +492,11 @@
     if (/^(?:https?:)?\//i.test(trimmed) || trimmed.startsWith('./') || trimmed.startsWith('../')) {
       return trimmed;
     }
-    if (trimmed.startsWith('photos/') || trimmed.startsWith('thumbnails/')) {
+    if (
+      trimmed.startsWith('photos/') ||
+      trimmed.startsWith('thumbnails/') ||
+      trimmed.startsWith('optimized/')
+    ) {
       return trimmed;
     }
     return `${basePrefix || ''}${trimmed.replace(/^\.\/?/, '')}`;

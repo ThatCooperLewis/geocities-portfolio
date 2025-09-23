@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Shrink original photos in-place so each file stays below a size budget.
+"""Produce optimised copies of the raw photos while leaving originals intact.
 
-The optimiser walks the ``photos/`` tree, gently downscales oversized originals
-and, if needed, applies format-appropriate compression tweaks. Images are saved
-back to their original locations only when the result fits under ``--max-bytes``.
+The optimiser walks the ``photos/`` tree, generates space-friendly variants
+inside ``optimized/`` that respect the requested size and resolution limits, and
+preserves the original files for archival use.
 """
 
 from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -28,6 +29,7 @@ except ImportError as exc:  # pragma: no cover - friendly CLI error
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PHOTOS_DIR = REPO_ROOT / "photos"
+OPTIMIZED_DIR = REPO_ROOT / "optimized"
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"}
 FORMAT_MAP = {
     ".jpg": "JPEG",
@@ -38,7 +40,8 @@ FORMAT_MAP = {
     ".tiff": "TIFF",
 }
 QUALITY_EXTENSIONS = {".jpg", ".jpeg", ".webp"}
-DEFAULT_MAX_BYTES = 10 * 1024 * 1024
+DEFAULT_MAX_BYTES = 4 * 1024 * 1024
+DEFAULT_MAX_DIMENSION = 3000
 DEFAULT_INITIAL_QUALITY = 90
 DEFAULT_MIN_QUALITY = 60
 DEFAULT_QUALITY_STEP = 5
@@ -117,7 +120,9 @@ def try_encode(image: Image.Image, ext: str, *, scale: float, quality: int | Non
 def optimise_file(
     path: Path,
     *,
+    output_root: Path,
     max_bytes: int,
+    max_dimension: int,
     initial_quality: int,
     min_quality: int,
     quality_step: int,
@@ -125,11 +130,16 @@ def optimise_file(
     min_scale: float,
     dry_run: bool,
 ) -> str:
+    try:
+        relative_path = path.relative_to(PHOTOS_DIR)
+    except ValueError:
+        relative_path = Path(path.name)
+
+    destination = output_root / relative_path
+
     stat_info = path.stat()
     original_size = stat_info.st_size
     original_mode = stat_info.st_mode
-    if original_size <= max_bytes:
-        return "already_ok"
 
     ext = path.suffix.lower()
     if ext not in FORMAT_MAP:
@@ -138,46 +148,89 @@ def optimise_file(
     with Image.open(path) as image:
         if getattr(image, "is_animated", False) and getattr(image, "n_frames", 1) > 1:
             return "skipped_animated"
+
         image = ImageOps.exif_transpose(image)
         image = convert_mode(image, ext)
         image.load()
 
-        scales = build_scale_sequence(scale_step, min_scale)
+        width, height = image.size
+        longest_dimension = max(width, height)
+        dimension_scale = 1.0
+        if max_dimension > 0 and longest_dimension > max_dimension:
+            dimension_scale = max_dimension / float(longest_dimension)
+        dimension_scale = min(dimension_scale, 1.0)
+
+        # For already-small files, keep an exact copy to avoid needless re-encoding.
+        if dimension_scale >= 0.999 and original_size <= max_bytes:
+            if dry_run:
+                print(
+                    f"DRY-RUN: Would copy {path.relative_to(REPO_ROOT)} -> {destination.relative_to(REPO_ROOT)}"
+                )
+                return "dry_run"
+
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, destination)
+            print(
+                f"Copied {path.relative_to(REPO_ROOT)} -> {destination.relative_to(REPO_ROOT)} "
+                f"(already within limits; {original_size / 1024:.1f} KiB)"
+            )
+            return "copied"
+
+        base_scales = build_scale_sequence(scale_step, min_scale)
+        scales: list[float] = []
+        for base_scale in base_scales:
+            actual_scale = base_scale * dimension_scale
+            if dimension_scale > 0:
+                actual_scale = min(actual_scale, dimension_scale)
+            if actual_scale <= 0:
+                continue
+            if not scales or abs(scales[-1] - actual_scale) > 1e-6:
+                scales.append(actual_scale)
+        if not scales:
+            scales = [dimension_scale if dimension_scale > 0 else 1.0]
+
         target_payload: bytes | None = None
+        target_size: tuple[int, int] | None = None
         chosen_scale: float | None = None
         chosen_quality: int | None = None
 
         quality_supported = ext in QUALITY_EXTENSIONS
 
-        # First pass: try progressively smaller renders without dropping quality.
         for scale in scales:
-            payload, size = try_encode(image, ext, scale=scale, quality=initial_quality if quality_supported else None)
-            if len(payload) <= max_bytes:
+            payload, size = try_encode(
+                image,
+                ext,
+                scale=scale,
+                quality=initial_quality if quality_supported else None,
+            )
+            if len(payload) <= max_bytes and (max_dimension <= 0 or max(size) <= max_dimension):
                 target_payload = payload
+                target_size = size
                 chosen_scale = scale
                 chosen_quality = initial_quality if quality_supported else None
                 break
 
-        # Second pass: only after hitting the minimum scale do we start reducing quality.
         if target_payload is None and quality_supported:
             min_scale_value = scales[-1]
             quality = initial_quality - quality_step
             while quality >= min_quality:
-                payload, _size = try_encode(image, ext, scale=min_scale_value, quality=quality)
-                if len(payload) <= max_bytes:
+                payload, size = try_encode(image, ext, scale=min_scale_value, quality=quality)
+                if len(payload) <= max_bytes and (max_dimension <= 0 or max(size) <= max_dimension):
                     target_payload = payload
+                    target_size = size
                     chosen_scale = min_scale_value
                     chosen_quality = quality
                     break
                 quality -= quality_step
 
-        if target_payload is None:
+        if target_payload is None or target_size is None:
             return "failed"
 
+    destination_str = destination.relative_to(REPO_ROOT)
     if dry_run:
         print(
-            f"DRY-RUN: Would optimise {path.relative_to(REPO_ROOT)} -> {len(target_payload) / 1024:.1f} KiB "
-            f"(was {original_size / 1024:.1f} KiB)"
+            f"DRY-RUN: Would optimise {path.relative_to(REPO_ROOT)} -> {destination_str} "
+            f"({target_size[0]}x{target_size[1]}, {len(target_payload) / 1024:.1f} KiB; was {original_size / 1024:.1f} KiB)"
             + (f", scale {chosen_scale:.3f}" if chosen_scale is not None else "")
             + (
                 f", quality {chosen_quality}" if chosen_quality is not None and chosen_quality != initial_quality else ""
@@ -185,18 +238,23 @@ def optimise_file(
         )
         return "dry_run"
 
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
     with tempfile.NamedTemporaryFile(
-        prefix=path.stem + "_optimised_", suffix=path.suffix, dir=path.parent, delete=False
+        prefix=path.stem + "_optimised_",
+        suffix=path.suffix,
+        dir=destination.parent,
+        delete=False,
     ) as tmp:
         tmp.write(target_payload)
         tmp_path = Path(tmp.name)
 
     os.chmod(tmp_path, original_mode)
-    os.replace(tmp_path, path)
+    os.replace(tmp_path, destination)
 
     print(
-        f"Optimised {path.relative_to(REPO_ROOT)} -> {len(target_payload) / 1024:.1f} KiB "
-        f"(was {original_size / 1024:.1f} KiB)"
+        f"Optimised {path.relative_to(REPO_ROOT)} -> {destination_str} "
+        f"({target_size[0]}x{target_size[1]}, {len(target_payload) / 1024:.1f} KiB; was {original_size / 1024:.1f} KiB)"
         + (f", scale {chosen_scale:.3f}" if chosen_scale is not None else "")
         + (
             f", quality {chosen_quality}" if chosen_quality is not None and chosen_quality != initial_quality else ""
@@ -211,7 +269,13 @@ def main(argv: list[str] | None = None) -> int:
         "--max-bytes",
         type=int,
         default=DEFAULT_MAX_BYTES,
-        help="Target max file size in bytes (default: 10 MiB)",
+        help="Target max file size in bytes (default: 4 MiB)",
+    )
+    parser.add_argument(
+        "--max-dimension",
+        type=int,
+        default=DEFAULT_MAX_DIMENSION,
+        help="Maximum allowed width or height in pixels for optimised images (default: 3000)",
     )
     parser.add_argument(
         "--initial-quality",
@@ -248,6 +312,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.max_bytes <= 0:
         raise SystemExit("--max-bytes must be positive")
+    if args.max_dimension <= 0:
+        raise SystemExit("--max-dimension must be positive")
     if not (0.0 < args.min_scale <= 1.0):
         raise SystemExit("--min-scale must be between 0 and 1")
     if not (0.0 < args.scale_step < 1.0):
@@ -258,9 +324,11 @@ def main(argv: list[str] | None = None) -> int:
     if not PHOTOS_DIR.exists():
         raise SystemExit(f"Photos directory not found: {PHOTOS_DIR}")
 
+    OPTIMIZED_DIR.mkdir(parents=True, exist_ok=True)
+
     stats = {
         "optimised": 0,
-        "already_ok": 0,
+        "copied": 0,
         "failed": 0,
         "skipped_unknown_format": 0,
         "skipped_animated": 0,
@@ -270,7 +338,9 @@ def main(argv: list[str] | None = None) -> int:
     for photo in iter_photo_files(PHOTOS_DIR):
         outcome = optimise_file(
             photo,
+            output_root=OPTIMIZED_DIR,
             max_bytes=args.max_bytes,
+            max_dimension=args.max_dimension,
             initial_quality=args.initial_quality,
             min_quality=args.min_quality,
             quality_step=args.quality_step,
@@ -283,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
     summary = (
         "Optimisation complete: "
         f"optimised={stats['optimised']} "
-        f"unchanged={stats['already_ok']} "
+        f"copied={stats['copied']} "
         f"skipped_animated={stats['skipped_animated']} "
         f"skipped_unknown={stats['skipped_unknown_format']} "
         f"failures={stats['failed']}"

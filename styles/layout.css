@@ -424,6 +424,7 @@ footer .badges {
   align-items: center;
   justify-content: center;
   width: 100%;
+  max-height: calc(100vh - 160px);
   position: relative;
 }
 
@@ -457,11 +458,29 @@ footer .badges {
 
 .lightbox__image {
   max-width: 90vw;
-  max-height: 90vh;
+  max-height: min(90vh, calc(100vh - 200px));
   border: var(--lightbox-image-border);
   box-shadow: var(--lightbox-image-shadow);
   cursor: pointer;
   transition: opacity 0.2s ease;
+}
+
+.lightbox__download {
+  margin-top: 16px;
+  font-size: 0.85rem;
+  color: var(--lightbox-download-color, rgba(255, 255, 255, 0.85));
+  text-align: center;
+}
+
+.lightbox__download a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lightbox__download a:hover,
+.lightbox__download a:focus-visible {
+  color: var(--color-accent-secondary, #ffb347);
 }
 
 .lightbox__image.is-transitioning {

@@ -78,6 +78,7 @@
   --lightbox-nav-background: rgba(255, 240, 240, 0.92);
   --lightbox-nav-color: var(--color-accent-tertiary);
   --lightbox-nav-shadow: 0 0 12px rgba(var(--color-accent-primary-rgb), 0.4);
+  --lightbox-download-color: var(--color-text-primary);
   --focus-outline: var(--color-accent-primary);
   --theme-switcher-background: rgba(255, 255, 255, 0.85);
   --theme-switcher-border: 3px groove #ff99ff;
