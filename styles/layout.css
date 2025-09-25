@@ -225,18 +225,23 @@ main h2 {
 }
 
 .gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 18px;
+  column-width: 220px;
+  column-gap: 18px;
 }
 
-figure {
-  margin: 0;
+.gallery figure {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 18px;
   padding: 12px;
   text-align: center;
   border: var(--figure-border);
   background: var(--figure-background);
   box-shadow: var(--figure-shadow);
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .gallery__trigger {
@@ -245,14 +250,14 @@ figure {
   padding: 0;
   width: 100%;
   cursor: inherit;
+  display: block;
 }
 
-figure img {
+.gallery__trigger img {
+  display: block;
   width: 100%;
   height: auto;
   border: var(--figure-image-border);
-  max-height: 260px;
-  object-fit: cover;
   cursor: zoom-in;
 }
 
