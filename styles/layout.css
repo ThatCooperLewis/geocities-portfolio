@@ -188,6 +188,11 @@ main h2 {
   text-shadow: var(--instructions-shadow, none);
 }
 
+.gallery--empty .instructions {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
 .noscript {
   color: var(--noscript-color);
   text-align: center;
@@ -227,6 +232,15 @@ main h2 {
 .gallery {
   column-width: 220px;
   column-gap: 18px;
+}
+
+.gallery--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  column-width: initial;
+  column-gap: 0;
+  min-height: 220px;
 }
 
 .gallery figure {

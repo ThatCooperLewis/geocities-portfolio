@@ -15,11 +15,14 @@
   const themeRadios = themeSwitchForm ? Array.from(themeSwitchForm.querySelectorAll("input[name='theme']")) : [];
   const globalManifest = Array.isArray(window.__PHOTO_MANIFEST__) ? window.__PHOTO_MANIFEST__ : null;
   let allItems = [];
-  let currentDirectory = '';
+  let currentDirectory = null;
   let currentItems = [];
   let currentIndex = -1;
   let currentImageToken = 0;
   const prefetchCache = new Set();
+  let directorySlugMap = new Map();
+  let slugDirectoryMap = new Map();
+  let isUpdatingHash = false;
   const TAP_SPARKLE_COLORS = ['#fff27f', '#ff75b5', '#62f5ff', '#ffe066', '#8afd8f'];
   const TAP_SPARKLE_PIECES = 8;
 
@@ -357,14 +360,12 @@
 
   function createGallery(items) {
     galleryEl.innerHTML = '';
+    galleryEl.classList.remove('gallery--empty');
     currentItems = Array.isArray(items) ? items.slice() : [];
     prefetchCache.clear();
     currentIndex = -1;
     if (!Array.isArray(items) || items.length === 0) {
-      const emptyMessage = document.createElement('p');
-      emptyMessage.textContent = 'No photos found for this selection.';
-      emptyMessage.className = 'instructions';
-      galleryEl.appendChild(emptyMessage);
+      renderEmptyGallery('No photos found for this selection.');
       return;
     }
 
@@ -557,13 +558,82 @@
       .join(' / ') || 'portfolio';
   }
 
+  function buildDirectorySlug(directory, taken) {
+    const raw = typeof directory === 'string' ? directory : '';
+    const trimmed = raw.trim();
+    const normalized = trimmed
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const base = normalized || (trimmed ? 'section' : 'portfolio');
+    let candidate = base || 'portfolio';
+    let attempt = 2;
+    while (taken.has(candidate)) {
+      candidate = `${base || 'portfolio'}-${attempt}`;
+      attempt += 1;
+    }
+    taken.add(candidate);
+    return candidate;
+  }
+
+  function getHashSlug() {
+    if (typeof window === 'undefined') {
+      return '';
+    }
+    const rawHash = window.location.hash;
+    if (!rawHash) {
+      return '';
+    }
+    const withoutHash = rawHash.slice(1).trim();
+    if (!withoutHash) {
+      return '';
+    }
+    try {
+      return decodeURIComponent(withoutHash).trim().toLowerCase();
+    } catch (err) {
+      return withoutHash.toLowerCase();
+    }
+  }
+
+  function updateLocationHash(slug) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const desiredHash = slug ? `#${slug}` : '';
+    if (window.location.hash === desiredHash) {
+      return;
+    }
+    isUpdatingHash = true;
+    if (slug) {
+      window.location.hash = slug;
+    } else if (typeof window.history?.replaceState === 'function') {
+      const { pathname, search } = window.location;
+      window.history.replaceState(null, '', `${pathname}${search}`);
+    } else {
+      window.location.hash = '';
+    }
+    window.setTimeout(() => {
+      isUpdatingHash = false;
+    }, 0);
+  }
+
+  function synchronizeHashForDirectory(directory) {
+    if (directory === null) {
+      updateLocationHash('');
+      return;
+    }
+    const slug = directorySlugMap.get(directory);
+    updateLocationHash(slug || '');
+  }
+
   function updateActiveDirectory(directory) {
     if (!folderNavEl) {
       return;
     }
+    const normalized = typeof directory === 'string' ? directory : null;
     const buttons = folderNavEl.querySelectorAll('[data-directory]');
     buttons.forEach((button) => {
-      const isActive = button.dataset.directory === directory;
+      const isActive = normalized !== null && button.dataset.directory === normalized;
       button.classList.toggle('is-active', isActive);
       if (isActive) {
         button.setAttribute('aria-pressed', 'true');
@@ -573,17 +643,40 @@
     });
   }
 
+  function renderEmptyGallery(message) {
+    galleryEl.innerHTML = '';
+    galleryEl.classList.add('gallery--empty');
+    const emptyMessage = document.createElement('p');
+    emptyMessage.textContent = message;
+    emptyMessage.className = 'instructions';
+    galleryEl.appendChild(emptyMessage);
+  }
+
+  function showCategoryPrompt() {
+    currentDirectory = null;
+    updateActiveDirectory(null);
+    currentItems = [];
+    currentIndex = -1;
+    prefetchCache.clear();
+    renderEmptyGallery('Select a category above');
+    synchronizeHashForDirectory(null);
+  }
+
   function initializeDirectoryNavigation(items) {
+    directorySlugMap = new Map();
+    slugDirectoryMap = new Map();
+
     if (!folderNavEl) {
-      return '';
+      return { defaultDirectory: '', hasRootDirectory: false };
     }
 
     if (!Array.isArray(items) || items.length === 0) {
       folderNavEl.hidden = true;
       folderNavEl.innerHTML = '';
-      return '';
+      return { defaultDirectory: '', hasRootDirectory: false };
     }
 
+    const usedSlugs = new Set();
     const directoryMap = new Map();
 
     items.forEach((item) => {
@@ -593,11 +686,16 @@
       if (existing) {
         existing.count += 1;
       } else {
-        directoryMap.set(key, {
+        const slug = buildDirectorySlug(key, usedSlugs);
+        const meta = {
           key,
           label: formatDirectoryLabel(key),
           count: 1,
-        });
+          slug,
+        };
+        directoryMap.set(key, meta);
+        directorySlugMap.set(key, slug);
+        slugDirectoryMap.set(slug, key);
       }
     });
 
@@ -610,7 +708,7 @@
     if (sorted.length <= 1 && sorted[0]?.key === '') {
       folderNavEl.hidden = true;
       folderNavEl.innerHTML = '';
-      return sorted[0]?.key ?? '';
+      return { defaultDirectory: sorted[0]?.key ?? '', hasRootDirectory: directoryMap.has('') };
     }
 
     folderNavEl.hidden = false;
@@ -622,6 +720,7 @@
       button.type = 'button';
       button.className = 'folder-nav__button';
       button.dataset.directory = meta.key;
+      button.dataset.slug = meta.slug;
       button.textContent = meta.label;
       button.addEventListener('click', () => {
         setDirectory(meta.key);
@@ -631,14 +730,21 @@
 
     folderNavEl.appendChild(fragment);
 
-    const rootEntry = directoryMap.get('');
-    return rootEntry ? rootEntry.key : sorted[0]?.key ?? '';
+    const hasRootDirectory = directoryMap.has('');
+    return {
+      defaultDirectory: hasRootDirectory ? '' : null,
+      hasRootDirectory,
+    };
   }
 
-  function setDirectory(directory) {
+  function setDirectory(directory, { updateHash = true } = {}) {
     const normalized = typeof directory === 'string' ? directory : '';
     currentDirectory = normalized;
     updateActiveDirectory(normalized);
+
+    if (updateHash) {
+      synchronizeHashForDirectory(normalized);
+    }
 
     const filtered = normalized
       ? allItems.filter((item) => (item.directory || '') === normalized)
@@ -647,10 +753,55 @@
     createGallery(filtered);
   }
 
+  function handleHashChange() {
+    if (isUpdatingHash) {
+      return;
+    }
+    const slug = getHashSlug();
+    if (!slug) {
+      if (currentDirectory !== null) {
+        showCategoryPrompt();
+      }
+      return;
+    }
+
+    if (!slugDirectoryMap.size) {
+      return;
+    }
+
+    const directory = slugDirectoryMap.get(slug);
+    if (directory === undefined) {
+      return;
+    }
+
+    if (currentDirectory === directory) {
+      return;
+    }
+
+    setDirectory(directory, { updateHash: false });
+  }
+
   function initializeGallery(items) {
     allItems = normalizeItems(items);
-    const defaultDirectory = initializeDirectoryNavigation(allItems);
-    setDirectory(defaultDirectory);
+    const { defaultDirectory } = initializeDirectoryNavigation(allItems);
+    const hashSlug = getHashSlug();
+
+    if (hashSlug) {
+      const hashedDirectory = slugDirectoryMap.get(hashSlug);
+      if (hashedDirectory !== undefined) {
+        setDirectory(hashedDirectory, { updateHash: false });
+        return;
+      }
+    } else if (hashSlug === '' && defaultDirectory === null) {
+      showCategoryPrompt();
+      return;
+    }
+
+    if (defaultDirectory !== null) {
+      setDirectory(defaultDirectory, { updateHash: hashSlug !== '' });
+    } else {
+      showCategoryPrompt();
+    }
   }
 
   async function loadGallery() {
@@ -746,6 +897,8 @@
       changeImage(-1);
     }
   });
+
+  window.addEventListener('hashchange', handleHashChange);
 
   initializeTheme();
   loadGallery();
