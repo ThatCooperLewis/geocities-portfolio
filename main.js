@@ -94,6 +94,7 @@
     blue: 'styles/theme-blue.css',
     neon: 'styles/theme-neon.css',
     sepia: 'styles/theme-sepia.css',
+    monochrom: 'styles/theme-monochrom.css',
     sunny: 'styles/theme-sunny.css',
   };
 
