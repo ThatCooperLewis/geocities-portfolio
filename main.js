@@ -8,6 +8,8 @@
   const lightboxStage = lightboxEl?.querySelector('.lightbox__stage');
   const lightboxDownloadWrapper = lightboxEl?.querySelector('[data-lightbox-download-wrapper]');
   const lightboxDownload = lightboxEl?.querySelector('[data-lightbox-download]');
+  const lightboxCaption = lightboxEl?.querySelector('[data-lightbox-caption]');
+  const lightboxDescriptionEl = lightboxEl?.querySelector('[data-lightbox-description]');
   const lightboxCloseBtn = lightboxEl?.querySelector('[data-lightbox-close]');
   const themeLinkEl = document.getElementById('themeStylesheet');
   const themeSwitchForm = document.querySelector('[data-theme-switcher]');
@@ -228,24 +230,35 @@
     const item = currentItems[normalizedIndex];
     if (!item) return;
 
-    const { full, thumb, title, download } = item;
+    const { full, thumb, title, download, description } = item;
+    const trimmedTitle = typeof title === 'string' ? title.trim() : '';
+    const trimmedDescription = typeof description === 'string' ? description.trim() : '';
+    const altText = trimmedTitle || trimmedDescription || `Gallery image ${normalizedIndex + 1}`;
     currentImageToken += 1;
     const requestToken = currentImageToken;
 
     lightboxImg.dataset.index = String(normalizedIndex);
-    lightboxImg.alt = title;
+    lightboxImg.alt = altText;
     lightboxImg.removeAttribute('src');
 
     if (lightboxDownloadWrapper && lightboxDownload) {
       if (download) {
         lightboxDownload.href = download;
-        lightboxDownload.setAttribute('aria-label', `Download full size of ${title}`);
+        const labelTitle = trimmedTitle || `image ${normalizedIndex + 1}`;
+        lightboxDownload.setAttribute('aria-label', `Download full size of ${labelTitle}`);
         lightboxDownloadWrapper.hidden = false;
       } else {
         lightboxDownload.removeAttribute('href');
         lightboxDownload.removeAttribute('aria-label');
         lightboxDownloadWrapper.hidden = true;
       }
+    }
+
+    if (lightboxCaption && lightboxDescriptionEl) {
+      const hasDescription = Boolean(trimmedDescription);
+      lightboxDescriptionEl.textContent = trimmedDescription;
+      lightboxDescriptionEl.hidden = !hasDescription;
+      lightboxCaption.hidden = !hasDescription;
     }
 
     setLightboxLoading(true, requestToken);
@@ -301,6 +314,13 @@
       lightboxDownload.removeAttribute('href');
       lightboxDownload.removeAttribute('aria-label');
       lightboxDownloadWrapper.hidden = true;
+    }
+    if (lightboxCaption) {
+      lightboxCaption.hidden = true;
+    }
+    if (lightboxDescriptionEl) {
+      lightboxDescriptionEl.textContent = '';
+      lightboxDescriptionEl.hidden = true;
     }
     currentIndex = -1;
     setLightboxLoading(false);
@@ -378,7 +398,11 @@
 
       const img = document.createElement('img');
       img.src = item.thumb;
-      img.alt = item.title;
+      const altText =
+        (typeof item.title === 'string' && item.title.trim()) ||
+        (typeof item.description === 'string' && item.description.trim()) ||
+        `Gallery image ${index + 1}`;
+      img.alt = altText;
       img.loading = 'lazy';
       img.decoding = 'async';
 
@@ -454,6 +478,7 @@
             thumb: fullPath,
             download: fullPath,
             title: buildTitleFromFilename(fullPath, index),
+            description: '',
             directory: deriveDirectoryFromFull(fullPath),
           };
         }
@@ -469,7 +494,15 @@
           const finalThumb = thumbPath || finalFull;
           const finalDownload = downloadPath || fallbackFull || finalFull;
           const filename = raw.filename ?? raw.name ?? extractFilename(finalFull) ?? `image-${index + 1}`;
-          const title = raw.title ?? buildTitleFromFilename(filename, index);
+          const title = typeof raw.title === 'string' && raw.title.trim()
+            ? raw.title.trim()
+            : buildTitleFromFilename(filename, index);
+          const description =
+            typeof raw.description === 'string'
+              ? raw.description.trim()
+              : typeof raw.caption === 'string'
+              ? raw.caption.trim()
+              : '';
           if (!finalFull) {
             return null;
           }
@@ -479,6 +512,7 @@
             thumb: finalThumb,
             download: finalDownload,
             title,
+            description,
             directory: deriveDirectoryFromFull(finalFull, raw.directory),
           };
         }

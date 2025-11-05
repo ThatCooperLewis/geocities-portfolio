@@ -484,6 +484,21 @@ footer .badges {
   transition: opacity 0.2s ease;
 }
 
+.lightbox__caption {
+  margin-top: 18px;
+  max-width: min(820px, 92vw);
+  text-align: center;
+  color: var(--lightbox-caption-color, rgba(255, 255, 255, 0.92));
+}
+
+.lightbox__description {
+  margin: 8px 0 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: var(--lightbox-caption-secondary, rgba(255, 255, 255, 0.85));
+  white-space: pre-line;
+}
+
 .lightbox__download {
   margin-top: 16px;
   font-size: 0.85rem;
