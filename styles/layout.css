@@ -110,6 +110,143 @@ body {
   background: var(--wrapper-background);
   padding: 18px;
   box-shadow: var(--wrapper-box-shadow);
+  position: relative;
+}
+
+.wrapper > *:not(.geo-sprites) {
+  position: relative;
+  z-index: 1;
+}
+
+.geo-sprites {
+  position: absolute;
+  inset: -10px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.geo-sprite {
+  position: absolute;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.6));
+}
+
+.geo-sprite--top-left {
+  top: -12px;
+  left: -10px;
+  animation: geo-sway 3.6s ease-in-out infinite;
+}
+
+.geo-sprite--top-right {
+  top: -14px;
+  right: -18px;
+  transform: rotate(3deg);
+  animation: geo-hop 2.4s ease-in-out infinite;
+}
+
+.geo-sprite--bottom-left {
+  bottom: -24px;
+  left: 20px;
+  transform: rotate(-6deg);
+  animation: geo-hop 2.8s ease-in-out infinite reverse;
+}
+
+.geo-sprite--bottom-right {
+  bottom: -12px;
+  right: -6px;
+  animation: geo-sway 4.2s ease-in-out infinite;
+}
+
+.geo-sprite--mid {
+  top: 45%;
+  left: -32px;
+  animation: geo-spin 6s linear infinite;
+}
+
+.geo-sprite--flower {
+  top: 18%;
+  right: -34px;
+  animation: geo-bloom 2.6s ease-in-out infinite;
+}
+
+.geo-sprite--comet {
+  top: -24px;
+  left: -40px;
+  animation: geo-comet 8s linear infinite;
+}
+
+@keyframes geo-sway {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(4deg);
+  }
+}
+
+@keyframes geo-hop {
+  0%,
+  100% {
+    transform: translateY(0) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(-4deg);
+  }
+}
+
+@keyframes geo-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes geo-bloom {
+  0%,
+  100% {
+    transform: scale(0.9) rotate(-4deg);
+  }
+  50% {
+    transform: scale(1.08) rotate(4deg);
+  }
+}
+
+@keyframes geo-comet {
+  0% {
+    transform: translateX(0) translateY(0) rotate(-6deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(180px) translateY(12px) rotate(2deg);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(220px) translateY(-6px) rotate(-8deg);
+    opacity: 0;
+  }
+}
+
+@keyframes geo-mini-comet {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0) rotate(-4deg);
+    opacity: 0.6;
+  }
+  40% {
+    transform: translateX(18px) translateY(-4px) rotate(3deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translateX(6px) translateY(6px) rotate(-2deg);
+  }
 }
 
 header {
@@ -139,6 +276,16 @@ header h1 {
   margin: 8px 0 20px;
   font-size: 1.1rem;
   color: var(--tagline-color);
+}
+
+@keyframes geo-wiggle {
+  0%,
+  100% {
+    transform: rotate(-6deg) scale(1);
+  }
+  50% {
+    transform: rotate(6deg) scale(1.05);
+  }
 }
 
 .tagline span {
@@ -294,6 +441,43 @@ main h2 {
   font-weight: bold;
 }
 
+.contact-comet {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+  pointer-events: none;
+}
+
+.contact-comet img {
+  image-rendering: pixelated;
+  animation: geo-mini-comet 4.2s ease-in-out infinite;
+}
+
+.geo-banner {
+  margin: 24px auto 0;
+  max-width: 260px;
+  padding: 8px 10px 12px;
+  text-align: center;
+  border: 4px ridge var(--color-accent-secondary);
+  background: rgba(18, 40, 56, 0.92);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.45) inset;
+}
+
+.geo-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto 8px;
+  image-rendering: pixelated;
+}
+
+.geo-banner__caption {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-tone-bright);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.65);
+}
+
 .camera-list {
   list-style: square inside;
   margin: 14px 0 0;
@@ -303,6 +487,18 @@ main h2 {
 .camera-list__name {
   color: var(--tagline-accent-color);
   font-weight: 700;
+}
+
+.about-sparkle {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+  pointer-events: none;
+}
+
+.about-sparkle img {
+  image-rendering: pixelated;
+  animation: geo-wiggle 2.2s ease-in-out infinite;
 }
 
 .theme-section {
@@ -364,6 +560,20 @@ footer .badges {
   justify-content: center;
   gap: 12px;
   margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .geo-sprite--top-right,
+  .geo-sprite--bottom-left,
+  .geo-sprite--mid,
+  .geo-sprite--flower,
+  .geo-sprite--comet {
+    display: none;
+  }
+
+  .contact-comet {
+    justify-content: center;
+  }
 }
 
 .lightbox {
