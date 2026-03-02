@@ -678,9 +678,16 @@
     });
   }
 
-  function renderEmptyGallery(message) {
+  function renderEmptyGallery(message, { showArrow = false } = {}) {
     galleryEl.innerHTML = '';
     galleryEl.classList.add('gallery--empty');
+    if (showArrow) {
+      const arrow = document.createElement('div');
+      arrow.className = 'category-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '\u2B06';
+      galleryEl.appendChild(arrow);
+    }
     const emptyMessage = document.createElement('p');
     emptyMessage.textContent = message;
     emptyMessage.className = 'instructions';
@@ -693,7 +700,7 @@
     currentItems = [];
     currentIndex = -1;
     prefetchCache.clear();
-    renderEmptyGallery('Select a category above');
+    renderEmptyGallery('Select a category above', { showArrow: true });
     synchronizeHashForDirectory(null);
   }
 

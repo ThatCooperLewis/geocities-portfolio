@@ -383,11 +383,25 @@ main h2 {
 
 .gallery--empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   column-width: initial;
   column-gap: 0;
   min-height: 220px;
+}
+
+.category-arrow {
+  font-size: 8rem;
+  line-height: 1;
+  color: var(--instructions-color);
+  text-shadow: var(--instructions-shadow, none);
+  animation: arrow-bounce 0.8s ease-in-out infinite;
+}
+
+@keyframes arrow-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-18px); }
 }
 
 .gallery figure {
