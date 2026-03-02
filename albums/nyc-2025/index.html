@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" class="album-page" data-root-prefix="../.." data-album-slug="nyc-2025">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shared Album • Cooper's Photo Zone</title>
+    <meta name="description" content="Private shared album from Cooper's Photo Zone." />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA2NCA2NCc+PHRleHQgeD0nNTAlJyB5PSc1MCUnIGRvbWluYW50LWJhc2VsaW5lPSdtaWRkbGUnIHRleHQtYW5jaG9yPSdtaWRkbGUnIGZvbnQtc2l6ZT0nNDgnPvCfkqk8L3RleHQ+PC9zdmc+"
+    />
+    <link rel="stylesheet" href="../../styles/layout.css" />
+    <link rel="stylesheet" href="../../styles/theme-blue.css" />
+    <link rel="stylesheet" href="../../styles/album.css" />
+  </head>
+  <body class="album-body">
+    <div class="album-wrapper">
+      <header class="album-header">
+        <div class="album-header__branding">
+          <p class="album-header__eyebrow">cooperwebsite.org / shared album</p>
+          <h1>Cooper's Photo Zone</h1>
+        </div>
+        <a class="album-header__back" href="../../index.html">&larr; Back to homepage</a>
+      </header>
+
+      <main class="album-main" data-album-root>
+        <section class="album-hero" data-album-hero>
+          <p class="album-hero__pill">Private link &mdash; please keep it secret &#x2728;</p>
+          <h2 class="album-hero__title" data-album-title>Loading album...</h2>
+          <p class="album-hero__meta" data-album-count></p>
+          <p class="album-hero__description" data-album-description>
+            I'm fetching your photos. This page updates automatically.
+          </p>
+          <div class="album-actions">
+            <button class="album-button" type="button" data-album-share disabled>
+              <span class="album-button__label">Add to Photos</span>
+            </button>
+            <a class="album-button album-button--ghost" data-album-archive hidden download>
+              Download .zip
+            </a>
+          </div>
+          <p class="album-share-status" data-share-status>
+            Works best on iOS 16+ and modern Android browsers.
+          </p>
+        </section>
+
+        <section class="album-status" data-album-status>
+          <p>Loading photos...</p>
+        </section>
+
+        <section class="album-gallery" data-album-gallery aria-live="polite"></section>
+      </main>
+
+      <footer class="album-footer">
+        <p>&copy; <span data-album-year></span> Cooper's Photo Zone &mdash; for friends &amp; family only.</p>
+      </footer>
+    </div>
+
+    <noscript>
+      <div class="album-noscript">
+        Enable JavaScript to load this private gallery.
+      </div>
+    </noscript>
+
+    <script src="../album.js" defer></script>
+  </body>
+</html>
