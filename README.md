@@ -4,6 +4,8 @@ Created ~~with immense shame~~ with love, using GPT Codex.
 
 I haven't looked in `main.js` even once, but I assume it's a nightmare.
 
+You can check it out here: [cooperwebsite.org](https://cooperwebsite.org).
+
 ## Preview locally
 Open `index.html` in any browser. We don't `npm` around here.
 
